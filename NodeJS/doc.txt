@@ -1,0 +1,9 @@
+npm install --save mongoose
+
+
+API
+    /account/login - get
+    /account/reset - put
+    /account/signup - post
+    /list - get, post, delete
+    /list/{id} - put, delete
