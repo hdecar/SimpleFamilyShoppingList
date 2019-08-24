@@ -4,16 +4,35 @@ const mongoose = require('mongoose');
 const Account = require('../models/account');
 const List = require('../models/list');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 const saltRounds = 1;
+const expiration = { expiresIn: '1h' };
+
+function emailLookup(email, response, next){
+    Account.findOne({'email': email}, (err, account)=>{
+        if (err || !account){
+            response.status(403).json({message: "Access denied."});
+        }else{
+            next(account);
+        }
+    });
+}
+
+
+function jwtSignature(account){
+    return jwt.sign({
+        account
+    }, process.env.SECRET_KEY, expiration);
+}
+
 
 router.post('/signup', (request, response, next) =>{
     var email = request.body.email;
     var password = request.body.password;
 
     //TODO: validate that the e-mail is unique
-    //TODO: encrypt the e-mail address
-
+    
     bcrypt.hash(password, saltRounds)
     .then(function(hash) {
         const account = new Account({
@@ -22,6 +41,7 @@ router.post('/signup', (request, response, next) =>{
             email: email,
             password: hash
         });
+        
         const list = new List({
             _id: account.listId,
             items: []
@@ -40,37 +60,32 @@ router.post('/signup', (request, response, next) =>{
             })
             .catch(err => {console.log(err);});
     
-        response.status(200).json(account);
+        var sig = jwtSignature(account);
+        response.status(200).json({token: sig});
     })
     .catch(err => {console.log(err);});
 
+    response.status(500);
     //TODO: create the account list
 });
 
 router.get('/login', (request, response, next) =>{
     const email = request.body.email;
-    const password = request.body.password;
-
-    Account.findOne({'email': email}, (err, account) => {
-        if (err || !account){
-            response.status(403).json({message: "Access denied."});
-        }else{
-
+    
+    emailLookup(email, response, (account)=>{
+        const password = request.body.password;
             //the e-mail was found, compare the password hash
             bcrypt.compare(password, account.password)
             .then(res => {
-                console.log(res);
                 if (res === true){
                     //TODO: return a JWT token
-                    response.status(200).json({message: "Access granted."});
+                    //account.token = jwt.sign(account, process.env.SECRET_KEY);
+                    var sig = jwtSignature(account);
+                    response.status(200).json({message: "Access granted.", token: sig});
                 }else{
                     response.status(403).json({message: "Access denied."});
                 }
             });
-        }
-    })
-    .catch(err => {
-        response.status(403).json({message: "Access denied."});
     });
 });
 

@@ -1,5 +1,6 @@
 {
     "env": {
-        "MONGO_DB_CONNECTION": ""
+        "MONGO_DB_CONNECTION": "",
+        "SECRET_KEY": ""
     }
 }
