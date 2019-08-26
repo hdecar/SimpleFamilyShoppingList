@@ -4,6 +4,7 @@ const listSchema = mongoose.Schema({
     _id: mongoose.SchemaTypes.ObjectId,
     items: [
         {
+            itemId: mongoose.SchemaTypes.Number,
             item: String
         }
     ]

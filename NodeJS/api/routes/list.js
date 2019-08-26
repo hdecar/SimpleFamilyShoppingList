@@ -50,9 +50,13 @@ router.post('/:id', (request, response)=>{
             if (result.error) return response.status(400).send(result.error.details[0].message);
 
             const item = request.body.item;
+            let itemid = 1;
+            if (list.items.length > 0){
+                itemid = list.items[list.items.length-1].itemId + 1
+            }
 
             const itemToAdd = {
-                id: list.items.length + 1,
+                itemId: itemid,
                 item: item
             }
 
@@ -77,34 +81,25 @@ router.delete('/:id/:itemid', (request, response)=>{
                 return;
             }
 
-        List.findOne({'_id': request.params.id}, (err, list) => {
-            if (err || !list){
-                response.status(403).json({message: "List not found."});
-                return;
-            }
-            const itemid = request.params.itemid;
-            
-            //TODO: fix the following query
-            List.findOne({'items': {'_id': itemid}}, (err, item)=>{
-
-                if (err || !item) {
-                    console.log(err);
-                    response.status(404).send('Item not found');
+            List.findOne({'_id': request.params.id}, (err, list) => {
+                if (err || !list){
+                    response.status(403).json({message: "List not found."});
                     return;
                 }
-                
-                const index = list.items.indexOf(item[0]);
+                const itemid = parseInt(request.params.itemid);
+                const item = list.items.find(x=>x.itemId === itemid);
+        
+                if (!item) return response.status(404).send('Item not found');
+        
+                const index = list.items.indexOf(item);
                 list.items.splice(index, 1);
-
+        
                 list.save()
                 .then(result => {
-                    console.log(result);
                     response.send(list);
                 })
                 .catch(err => {console.log(err);});
             });
-
-        });
     });
 });
 

@@ -32,41 +32,47 @@ router.post('/signup', (request, response, next) =>{
     var password = request.body.password;
 
     //TODO: validate that the e-mail is unique
-    
-    bcrypt.hash(password, saltRounds)
-    .then(function(hash) {
-        const account = new Account({
-            _id: new mongoose.Types.ObjectId(),
-            listId: new mongoose.Types.ObjectId(),
-            email: email,
-            password: hash
-        });
-        
-        const list = new List({
-            _id: account.listId,
-            items: []
-        });
-        
-        account
-            .save()
-            .then(result => {
-                console.log(result);
+    Account.findOne({'email': email}, (err, account)=>{
+        if (account){
+            response.status(200).send("E-mail is not available.");
+            return;
+        }else{
+     
+            bcrypt.hash(password, saltRounds)
+            .then(function(hash) {
+                const account = new Account({
+                    _id: new mongoose.Types.ObjectId(),
+                    listId: new mongoose.Types.ObjectId(),
+                    email: email,
+                    password: hash
+                });
+                
+                const list = new List({
+                    _id: account.listId,
+                    items: []
+                });
+                
+                account
+                    .save()
+                    .then(result => {
+                        console.log(result);
+                    })
+                    .catch(err => {console.log(err);});
+                
+                list.save()
+                    .then(result => {
+                        console.log(result);
+                    })
+                    .catch(err => {console.log(err);});
+            
+                var sig = jwtSignature(account);
+                response.status(200).json({token: sig});
             })
             .catch(err => {console.log(err);});
-        
-        list.save()
-            .then(result => {
-                console.log(result);
-            })
-            .catch(err => {console.log(err);});
-    
-        var sig = jwtSignature(account);
-        response.status(200).json({token: sig});
-    })
-    .catch(err => {console.log(err);});
 
-    response.status(500);
-    //TODO: create the account list
+            response.status(500);  
+        }
+    });
 });
 
 router.get('/login', (request, response, next) =>{
